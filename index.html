@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Defeat Procrastination</title>
+  <style>
+    body {
+  font-family: Arial, sans-serif;
+  background: #0f172a;
+  color: white;
+  max-width: 500px;
+  margin: 40px auto;
+  padding: 0 20px;
+}
+
+input {
+  width: 100%;
+  padding: 12px;
+  font-size: 16px;
+  margin-bottom: 12px;
+}
+
+button {
+  padding: 10px 20px;
+  font-size: 16px;
+  cursor: pointer;
+}
+    
+  </style>
+</head>
+<body>
+  <h1>Defeat Procrastination</h1>
+  <input type="text" id="task" placeholder="What are you avoiding?">
+  <button id="go">Next</button>
+  <div id="reasonButtons"></div>
+  <p id="output"></p>
+    <p id="fix"></p>
+
+    <p id="step"></p>
+    <p id="timer"></p>
+
+
+  <script>
+    const go = document.getElementById("go");
+
+    go.addEventListener("click", function () {
+    const task = document.getElementById("task").value;
+    document.getElementById("output").textContent = "You're avoiding: " + task;
+    });
+  </script>
+</body>
+</html>
