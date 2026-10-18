@@ -163,6 +163,12 @@
   .plan-card:empty { display: none; }
   .plan-line { padding: 12px 14px; border-radius: 12px; background: rgba(255, 255, 255, 0.06); border-left: 4px solid var(--accent); animation: rise 0.3s ease-out both; }
   .plan-line strong { display: block; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--accent); } 
+  #quizOpts button { display: block; width: 100%; text-align: left; padding: 12px 14px; margin: 8px 0; background: rgba(255, 255, 255, 0.05); color: var(--text); border: 1px solid var(--line); }
+  #quizOpts button:hover { border-color: var(--accent); }
+  .toolkit { margin: 8px 0 14px; padding-left: 20px; }
+  .toolkit li { margin: 6px 0; font-weight: 400; }
+  .result-title { font-size: 1.2rem; }
+  .result-note { font-weight: 400; color: var(--muted); font-size: 0.85rem; }
   </style>
 </head>
 <body>
@@ -170,6 +176,15 @@
   <input type="text" id="task" placeholder="What are you avoiding?">
   <button id="go" class="primary">Next</button>
   <div id="reasonButtons"></div>
+  <button id="quizStart" class="secondary" hidden>Not sure why? Take the 1-minute self-check</button>
+
+  <section id="quiz" class="prompt" hidden>
+    <p id="quizQ"></p>
+    <div id="quizOpts"></div>
+    <p id="quizProgress" class="hint"></p>
+  </section>
+
+  <section id="quizResult" class="prompt" hidden></section>
   <p id="output"></p>
   <p id="fix"></p>
   <p id="technique"></p>
@@ -185,17 +200,17 @@
 </section>
   <p id="timer"></p>
   <button id="startTimer" class="secondary" hidden>Start 5-minute timer</button>
-  <p id="planOut"></p>
-  <button id="planCraft" class="primary">Craft my plan</button>
-  <div id="planCraftOut" class="plan-card"></div> 
-  <p>Make an if-then plan</p>
-  <label for="planWhen" class="hint">When will you do it?</label>
-  <input type="text" id="planWhen" placeholder="e.g. after dinner">
-  <label for="planWhere" class="hint">Where?</label>
-  <input type="text" id="planWhere" placeholder="e.g. at my desk">
-  <button id="planSave" class="secondary">Lock in my plan</button>
-  <p id="planOut"></p>
-</div>
+   <div id="planBox" class="prompt" hidden>
+    <p>Make an if-then plan</p>
+    <label for="planWhen" class="hint">When will you do it?</label>
+    <input type="text" id="planWhen" placeholder="e.g. after dinner">
+    <label for="planWhere" class="hint">Where?</label>
+    <input type="text" id="planWhere" placeholder="e.g. at my desk">
+    <button id="planSave" class="secondary">Lock in my plan</button>
+    <p id="planOut"></p>
+    <button id="planCraft" class="primary">Craft my plan</button>
+    <div id="planCraftOut" class="plan-card"></div>
+  </div>
 
 <div id="startedPrompt" class="prompt" hidden>
   <p>Time's up. Did you start?</p>
@@ -258,6 +273,7 @@
       document.getElementById("output").textContent = "You're avoiding: " + task;
       const box = document.getElementById("reasonButtons");
       box.innerHTML = "";
+      document.getElementById("quizStart").hidden=false;
 
       for (const key in reasons) {
         const btn = document.createElement("button");
@@ -567,6 +583,159 @@ document.getElementById("no").addEventListener("click", function () {
     "That's okay. Everyone gets stuck. Try an even smaller step, or pick a time to try again.";
 });
 
+// ---- Self-check quiz ----
+const QUIZ = [
+  { q: "When you picture starting, what's your first feeling?", a: [
+    ["Ugh, this is so boring", { boring: 2 }],
+    ["Worried it won't be good enough", { scary: 2 }],
+    ["Confused about what to do first", { confusing: 2 }],
+    ["Overwhelmed by how much there is", { big: 2 }],
+    ["Too tired to care", { tired: 2 }]
+  ]},
+  { q: "What do you usually do instead of starting?", a: [
+    ["Scroll my phone or watch something", { boring: 2 }],
+    ["Tweak, research, or redo things before I begin", { scary: 2 }],
+    ["Re-read the instructions or open lots of tabs", { confusing: 2 }],
+    ["Do easier, smaller tasks first", { big: 2 }],
+    ["Nap or zone out", { tired: 2 }]
+  ]},
+  { q: "What would make starting easier right now?", a: [
+    ["Making it more fun", { boring: 2 }],
+    ["Knowing it's okay if it's not perfect", { scary: 2 }],
+    ["Someone telling me the exact first step", { confusing: 2 }],
+    ["Having just a small piece to do", { big: 2 }],
+    ["Rest or some energy", { tired: 2 }]
+  ]},
+  { q: "How's your energy today?", a: [
+    ["Pretty drained", { tired: 2 }],
+    ["Okay", {}],
+    ["Good", {}]
+  ]},
+  { q: "Imagine handing this in. What comes to mind?", a: [
+    ["It won't be good enough", { scary: 2 }],
+    ["Whatever, I don't care about this one", { boring: 2 }],
+    ["I'm not sure it's what they wanted", { confusing: 2 }],
+    ["There's still so much to finish", { big: 2 }],
+    ["I just want to go to sleep", { tired: 1 }]
+  ]}
+];
+
+const TOOLKIT = {
+  boring: [
+    "Pair it with something you enjoy, like music, a snack, or a nice spot.",
+    "Turn one small part into a game: try to beat your own time.",
+    "Work in a 10-minute sprint, then take a real break."
+  ],
+  scary: [
+    "Give yourself permission to write a bad first version.",
+    "Talk to yourself the way you'd talk to a friend in your spot.",
+    "Set a 'good enough' goal before you start, so you know when you can stop."
+  ],
+  confusing: [
+    "Write 3 questions about the task and don't answer them yet.",
+    "Ask your teacher or a classmate one specific question.",
+    "Make an if-then plan: decide when and where you'll do the first step."
+  ],
+  big: [
+    "Shrink the first step until it feels almost silly.",
+    "List 3 to 5 small parts and do only the first one.",
+    "Start for just two minutes, and give yourself permission to stop after."
+  ],
+  tired: [
+    "Do the smallest possible version, or choose rest on purpose.",
+    "Drink water, stretch, or step outside for a few minutes first.",
+    "Pick a specific time later to try again, and protect your sleep."
+  ]
+};
+
+let quizIndex = 0;
+let quizScores = {};
+
+function startQuiz() {
+  quizIndex = 0;
+  quizScores = {};
+  document.getElementById("quizResult").hidden = true;
+  document.getElementById("quiz").hidden = false;
+  showQuestion();
+}
+
+function showQuestion() {
+  const item = QUIZ[quizIndex];
+  document.getElementById("quizQ").textContent = item.q;
+  document.getElementById("quizProgress").textContent =
+    "Question " + (quizIndex + 1) + " of " + QUIZ.length;
+
+  const opts = document.getElementById("quizOpts");
+  opts.innerHTML = "";
+  item.a.forEach(function (opt) {
+    const b = document.createElement("button");
+    b.textContent = opt[0];
+    b.addEventListener("click", function () { answerQuestion(opt[1]); });
+    opts.appendChild(b);
+  });
+}
+
+function answerQuestion(points) {
+  for (const k in points) {
+    quizScores[k] = (quizScores[k] || 0) + points[k];
+  }
+  quizIndex++;
+  if (quizIndex < QUIZ.length) showQuestion();
+  else showQuizResult();
+}
+
+function makeEl(tag, text, className) {
+  const e = document.createElement(tag);
+  e.textContent = text;
+  if (className) e.className = className;
+  return e;
+}
+
+function showQuizResult() {
+  document.getElementById("quiz").hidden = true;
+
+  const keys = Object.keys(reasons).sort(function (a, b) {
+    return (quizScores[b] || 0) - (quizScores[a] || 0);
+  });
+  const main = keys[0];
+  const second = keys[1];
+
+  const box = document.getElementById("quizResult");
+  box.innerHTML = "";
+  box.append(makeEl("p", "Your main pattern: " + reasons[main].label, "result-title"));
+  box.append(makeEl("p", reasons[main].technique + ": " + reasons[main].why));
+
+  if ((quizScores[second] || 0) >= 2) {
+    box.append(makeEl("p", "Also showing up: " + reasons[second].label, "result-note"));
+  }
+
+  box.append(makeEl("p", "Your toolkit:"));
+  const ul = document.createElement("ul");
+  ul.className = "toolkit";
+  TOOLKIT[main].forEach(function (t) { ul.append(makeEl("li", t)); });
+  box.append(ul);
+
+  const useBtn = makeEl("button", "Use this and build my plan", "primary");
+  useBtn.addEventListener("click", function () {
+    const index = Object.keys(reasons).indexOf(main);
+    document.getElementById("reasonButtons").children[index].click();
+    document.getElementById("step").scrollIntoView({ behavior: "smooth", block: "center" });
+  });
+  box.append(useBtn);
+
+  const retake = makeEl("button", "Retake the self-check", "secondary");
+  retake.addEventListener("click", startQuiz);
+  box.append(retake);
+
+  box.append(makeEl("p",
+    "This is a self-reflection tool, not a medical or psychological diagnosis. " +
+    "If procrastination is constant and affects your sleep, mood, or school, " +
+    "talk to a trusted adult or school counselor.", "result-note"));
+
+  box.hidden = false;
+}
+
+document.getElementById("quizStart").addEventListener("click", startQuiz);
 renderStats();
 document.getElementById("aiStep").addEventListener("click", function () {
   const task = document.getElementById("task").value.trim();
