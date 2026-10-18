@@ -44,7 +44,9 @@
   <p id="fix"></p>
 
   <p id="step"></p>
+  <button id="aiStep">Make my step more specific</button>
   <p id="timer"></p>
+  <button id="startTimer">Start 5-minute timer</button>
 
 
   <script>
@@ -65,27 +67,80 @@
         fix: "Shrink it until the first step feels silly.",
         step: "Do only the first two minutes."
       }
-    }
+
+    };
+    let currentReason = "";
     const go = document.getElementById("go");
 
     go.addEventListener("click", function () {
-    const task = document.getElementById("task").value;
-    document.getElementById("output").textContent = "You're avoiding: " + task;
-     const box = document.getElementById("reasonButtons");
+      const task = document.getElementById("task").value;
+      document.getElementById("output").textContent = "You're avoiding: " + task;
+      const box = document.getElementById("reasonButtons");
       box.innerHTML = "";
 
-    for (const key in reasons) {
-      const btn = document.createElement("button");
-      btn.textContent = reasons[key].label;
+      for (const key in reasons) {
+        const btn = document.createElement("button");
+        btn.textContent = reasons[key].label;
 
-      btn.addEventListener("click", function () {
-        document.getElementById("fix").textContent = reasons[key].fix;
-        document.getElementById("step").textContent = "Your tiny first step: " + reasons[key].step;
-      });
-
-      box.appendChild(btn);
+        btn.addEventListener("click", function () {
+            currentReason= reasons[key].label;
+            document.getElementById("fix").textContent = reasons[key].fix;
+            document.getElementById("step").textContent = "Your tiny first step: " + reasons[key].step;
+        });
+        box.appendChild(btn);
       }
     });
+
+          let timerId = null;
+            function startTimer() {
+            // If a timer is already running, stop it first
+            clearInterval(timerId);
+
+            let secondsLeft = 300; 
+            showTime(secondsLeft);
+
+            timerId = setInterval(function () {
+              secondsLeft--;
+              showTime(secondsLeft);
+
+              if (secondsLeft <= 0) {
+                clearInterval(timerId);
+                document.getElementById("timer").textContent = "Time's up! Did you start?";
+              }
+            }, 1000); // runs every 1000 ms
+          }
+          function showTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            document.getElementById("timer").textContent =
+              mins + ":" + String(secs).padStart(2, "0");
+          }
+
+          document.getElementById("startTimer").addEventListener("click", startTimer);
+          document.getElementById("aiStep").addEventListener("click", async function () {
+          const task = document.getElementById("task").value.trim();
+          const stepBox = document.getElementById("step");
+
+
+          if (!task || !currentReason) {
+            stepBox.textContent = "Type a task and pick a reason first.";
+            return;
+          }
+
+          stepBox.textContent = "Thinking...";
+          try {
+            const res = await fetch("PASTE-YOUR-WORKER-URL-HERE", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ task: task, reason: currentReason })
+          });
+          const data = await res.json();
+          stepBox.textContent = data.step || "Couldn't get a custom step. Try again in a minute.";
+        } catch (err) {
+          stepBox.textContent = "Couldn't reach the AI. Your built-in step still works.";
+          console.log(err);
+        }
+      });
   </script>
 </body>
 </html>
