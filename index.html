@@ -6,26 +6,32 @@
   <title>Defeat Procrastination</title>
   <style>
     body {
-  font-family: Arial, sans-serif;
-  background: #0f172a;
-  color: white;
-  max-width: 500px;
-  margin: 40px auto;
-  padding: 0 20px;
-}
+      font-family: Arial, sans-serif;
+      background: #0f172a;
+      color: white;
+      max-width: 500px;
+      margin: 40px auto;
+      padding: 0 20px;
+    }
 
-input {
-  width: 100%;
-  padding: 12px;
-  font-size: 16px;
-  margin-bottom: 12px;
-}
+    input {
+      width: 100%;
+      padding: 12px;
+      font-size: 16px;
+      margin-bottom: 12px;
+    }
 
-button {
-  padding: 10px 20px;
-  font-size: 16px;
-  cursor: pointer;
-}
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    #reasonButtons button {
+      display: block;
+      margin: 8px 0;
+
+    }
     
   </style>
 </head>
@@ -35,18 +41,50 @@ button {
   <button id="go">Next</button>
   <div id="reasonButtons"></div>
   <p id="output"></p>
-    <p id="fix"></p>
+  <p id="fix"></p>
 
-    <p id="step"></p>
-    <p id="timer"></p>
+  <p id="step"></p>
+  <p id="timer"></p>
 
 
   <script>
+    const reasons={
+      boring: {
+        label: "It's boring",
+        fix: "Attach something fun to it, like music or a snack.",
+        step:"Work on it until one song ends."
+
+      },
+      scary: {
+        label: "I'm scared I'll do it badly",
+        fix: "Give yourself permission to make a bad first version.",
+         step: "Spend 5 minutes making the worst draft on purpose."
+      },
+      big: {
+        label: "It feels too big",
+        fix: "Shrink it until the first step feels silly.",
+        step: "Do only the first two minutes."
+      }
+    }
     const go = document.getElementById("go");
 
     go.addEventListener("click", function () {
     const task = document.getElementById("task").value;
     document.getElementById("output").textContent = "You're avoiding: " + task;
+     const box = document.getElementById("reasonButtons");
+      box.innerHTML = "";
+
+    for (const key in reasons) {
+      const btn = document.createElement("button");
+      btn.textContent = reasons[key].label;
+
+      btn.addEventListener("click", function () {
+        document.getElementById("fix").textContent = reasons[key].fix;
+        document.getElementById("step").textContent = "Your tiny first step: " + reasons[key].step;
+      });
+
+      box.appendChild(btn);
+      }
     });
   </script>
 </body>
