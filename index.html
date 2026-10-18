@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Defeat Procrastination</title>
   <style>
+    
         :root {
       --bg1: #0b1220;
       --bg2: #111b33;
@@ -148,7 +149,16 @@
   .chat-row input { margin: 0; flex: 1; }
   .chat-send { padding: 0 18px; border: 0; background: var(--accent); color: var(--accent-dark); font-weight: 700; }
   .chat-send:disabled { opacity: 0.5; }
-  .hint { margin: 8px 0 0; font-size: 0.8rem; color: var(--muted); }    
+  .hint { margin: 8px 0 0; font-size: 0.8rem; color: var(--muted); }
+  .prompt { margin-top: 16px; padding: 16px; border: 1px solid var(--line); border-radius: 14px; background: rgba(255, 255, 255, 0.05); }
+  .prompt p { margin: 0 0 8px; font-weight: 600; }
+  .stats { margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--line); }
+  .stats h2 { margin: 0 0 12px; font-size: 1.1rem; }
+  .stat-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--line); }
+  .stat-row span:first-child { color: var(--muted); }
+  .insight { margin-top: 12px; color: var(--muted); }
+  #technique { font-size: 0.9rem; color: var(--muted); margin: 8px 0 0; }
+  #technique strong { color: var(--accent); } 
   </style>
 </head>
 <body>
@@ -158,7 +168,7 @@
   <div id="reasonButtons"></div>
   <p id="output"></p>
   <p id="fix"></p>
-
+  <p id="technique"></p>
   <p id="step"></p>
   <button id="aiStep" class="secondary" hidden>Make my step more specific</button>
   <section id="chat" class="chat" hidden>
@@ -167,34 +177,72 @@
     <input type="text" id="chatInput" placeholder="Ask a follow-up...">
     <button id="chatSend" class="chat-send">Send</button>
   </div>
-  <p class="hint">Please don't type personal information.</p>
+  <p class="hint">This is a study helper, not therapy. If you're feeling really overwhelmed or down, talk to a trusted adult or school counselor. Please don't type personal information.</p>
 </section>
   <p id="timer"></p>
   <button id="startTimer" class="secondary" hidden>Start 5-minute timer</button>
+  <div id="planBox" class="prompt" hidden>
+  <label for="planWhen">When and where will you do it?</label>
+  <input type="text" id="planWhen" placeholder="e.g. after dinner, at my desk">
+  <button id="planSave" class="secondary">Lock in my plan</button>
+  <p id="planOut"></p>
+</div>
+
+<div id="startedPrompt" class="prompt" hidden>
+  <p>Time's up. Did you start?</p>
+  <button id="yes" class="primary">Yes, I started</button>
+  <button id="no" class="secondary">Not yet</button>
+</div>
+<p id="kindNote" class="insight"></p>
+
+<section class="stats">
+  <h2>Your pattern</h2>
+  <div id="statsBody"></div>
+</section>
   
 
   <script>
-    const reasons={
-      boring: {
-        label: "It's boring",
-        fix: "Attach something fun to it, like music or a snack.",
-        step:"Work on it until one song ends."
-
-      },
-      scary: {
-        label: "I'm scared I'll do it badly",
-        fix: "Give yourself permission to make a bad first version.",
-         step: "Spend 5 minutes making the worst draft on purpose."
-      },
-      big: {
-        label: "It feels too big",
-        fix: "Shrink it until the first step feels silly.",
-        step: "Do only the first two minutes."
-      }
-
-    };
-    let currentReason = "";
+    const reasons = {
+  boring: {
+    label: "It's boring",
+    technique: "Temptation bundling",
+    why: "Pairing a boring task with something you enjoy makes starting feel less costly.",
+    fix: "Attach something you like to it, such as a playlist, a snack, or a good seat.",
+    step: "Start your favorite playlist and work until the first song ends."
+  },
+  scary: {
+    label: "I'm scared I'll do it badly",
+    technique: "Self-compassion and a good-enough draft",
+    why: "Being hard on yourself makes avoidance worse. Kindness makes starting easier.",
+    fix: "Your first version is allowed to be bad. That's its job.",
+    step: "Spend 5 minutes writing the worst possible version on purpose."
+  },
+  confusing: {
+    label: "I don't know where to start",
+    technique: "If-then planning",
+    why: "Deciding when and where you'll act removes the in-the-moment decision.",
+    fix: "Confusion is a missing plan, not a missing skill. Write questions, not answers.",
+    step: "Write down 3 questions you have about it. Don't answer them yet."
+  },
+  big: {
+    label: "It feels too big",
+    technique: "Task breakdown",
+    why: "Motivation often follows action. A tiny start gets you moving.",
+    fix: "Shrink it until the first step feels almost silly.",
+    step: "Open what you need and do only the first two minutes."
+  },
+  tired: {
+    label: "I'm too tired",
+    technique: "Minimum version and rest check",
+    why: "Pushing on empty usually backfires. A tiny version, or planned rest, works better.",
+    fix: "Do the smallest possible version, or choose rest on purpose and set a time to return.",
+    step: "Drink some water and write one sentence about what's left to do."
+  }
+};
     const go = document.getElementById("go");
+    let currentReason= "";
+    let currentStep="";
+
 
     go.addEventListener("click", function () {
       const task = document.getElementById("task").value;
@@ -212,7 +260,15 @@
             document.getElementById("step").textContent = "Your tiny first step: " + reasons[key].step;
             document.getElementById("aiStep").hidden = false;       // new
             document.getElementById("startTimer").hidden = false;   // new
+            currentStep = reasons[key].step;
+            const tech = document.getElementById("technique");
+            tech.textContent = "";
+            const strong = document.createElement("strong");
+            strong.textContent = reasons[key].technique + ": ";
+            tech.append(strong, reasons[key].why);
+            document.getElementById("planBox").hidden = false;
           });
+
         box.appendChild(btn);
       }
     });
@@ -221,6 +277,9 @@
             function startTimer() {
             // If a timer is already running, stop it first
             clearInterval(timerId);
+            document.getElementById("startedPrompt").hidden = true;
+            document.getElementById("kindNote").textContent = "";
+
 
             let secondsLeft = 300; 
             showTime(secondsLeft);
@@ -231,7 +290,8 @@
 
               if (secondsLeft <= 0) {
                 clearInterval(timerId);
-                document.getElementById("timer").textContent = "Time's up! Did you start?";
+                document.getElementById("timer").textContent = "0:00";
+                document.getElementById("startedPrompt").hidden = false;
               }
             }, 1000); // runs every 1000 ms
           }
@@ -314,7 +374,91 @@ async function sendToAI(userText) {
   chatSend.disabled = false;
   chatInput.focus();
 }
+// ---- If-then plan ----
+document.getElementById("planSave").addEventListener("click", function () {
+  const when = document.getElementById("planWhen").value.trim();
+  const out = document.getElementById("planOut");
+  if (!when) {
+    out.textContent = "Add a time or place first.";
+    return;
+  }
+  out.textContent = 'Your plan: When it\'s "' + when + '", I will: ' + currentStep;
+});
 
+// ---- Saved log and stats ----
+const LOG_KEY = "defeat-procrastination-log";
+
+function loadLog() {
+  try { return JSON.parse(localStorage.getItem(LOG_KEY)) || []; }
+  catch (e) { return []; }
+}
+
+function saveLog(log) {
+  try { localStorage.setItem(LOG_KEY, JSON.stringify(log)); }
+  catch (e) { console.log(e); }
+}
+
+function recordResult(started) {
+  const log = loadLog();
+  log.push({
+    reason: currentReason,
+    started: started,
+    date: new Date().toISOString().slice(0, 10)
+  });
+  saveLog(log);
+  document.getElementById("startedPrompt").hidden = true;
+  renderStats();
+}
+
+function addRow(parent, label, value) {
+  const row = document.createElement("div");
+  row.className = "stat-row";
+  const a = document.createElement("span");
+  const b = document.createElement("span");
+  a.textContent = label;
+  b.textContent = value;
+  row.append(a, b);
+  parent.appendChild(row);
+}
+
+function renderStats() {
+  const body = document.getElementById("statsBody");
+  body.innerHTML = "";
+  const log = loadLog();
+
+  if (log.length === 0) {
+    body.textContent = "Nothing yet. Finish a timer and your pattern will show up here.";
+    return;
+  }
+
+  const startedCount = log.filter(function (x) { return x.started; }).length;
+  const counts = {};
+  log.forEach(function (x) { counts[x.reason] = (counts[x.reason] || 0) + 1; });
+  const top = Object.keys(counts).sort(function (a, b) { return counts[b] - counts[a]; })[0];
+
+  addRow(body, "Timers finished", log.length);
+  addRow(body, "Times you started", startedCount + " (" + Math.round(startedCount / log.length * 100) + "%)");
+  addRow(body, "Most common reason", top);
+
+  const note = document.createElement("p");
+  note.className = "insight";
+  note.textContent = "Your most common block is \"" + top + "\". Try picking that reason first next time.";
+  body.appendChild(note);
+}
+
+document.getElementById("yes").addEventListener("click", function () {
+  recordResult(true);
+  document.getElementById("kindNote").textContent =
+    "Nice. Starting is the hardest part, and you did it.";
+});
+
+document.getElementById("no").addEventListener("click", function () {
+  recordResult(false);
+  document.getElementById("kindNote").textContent =
+    "That's okay. Everyone gets stuck. Try an even smaller step, or pick a time to try again.";
+});
+
+renderStats();
 document.getElementById("aiStep").addEventListener("click", function () {
   const task = document.getElementById("task").value.trim();
   if (!task || !currentReason) {
