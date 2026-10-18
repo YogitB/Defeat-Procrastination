@@ -159,6 +159,10 @@
   .insight { margin-top: 12px; color: var(--muted); }
   #technique { font-size: 0.9rem; color: var(--muted); margin: 8px 0 0; }
   #technique strong { color: var(--accent); } 
+  .plan-card { margin-top: 12px; display: grid; gap: 8px; }
+  .plan-card:empty { display: none; }
+  .plan-line { padding: 12px 14px; border-radius: 12px; background: rgba(255, 255, 255, 0.06); border-left: 4px solid var(--accent); animation: rise 0.3s ease-out both; }
+  .plan-line strong { display: block; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--accent); } 
   </style>
 </head>
 <body>
@@ -181,9 +185,14 @@
 </section>
   <p id="timer"></p>
   <button id="startTimer" class="secondary" hidden>Start 5-minute timer</button>
-  <div id="planBox" class="prompt" hidden>
-  <label for="planWhen">When and where will you do it?</label>
-  <input type="text" id="planWhen" placeholder="e.g. after dinner, at my desk">
+  <p id="planOut"></p>
+  <button id="planCraft" class="primary">Craft my plan</button>
+  <div id="planCraftOut" class="plan-card"></div> 
+  <p>Make an if-then plan</p>
+  <label for="planWhen" class="hint">When will you do it?</label>
+  <input type="text" id="planWhen" placeholder="e.g. after dinner">
+  <label for="planWhere" class="hint">Where?</label>
+  <input type="text" id="planWhere" placeholder="e.g. at my desk">
   <button id="planSave" class="secondary">Lock in my plan</button>
   <p id="planOut"></p>
 </div>
@@ -375,14 +384,106 @@ async function sendToAI(userText) {
   chatInput.focus();
 }
 // ---- If-then plan ----
+const PLAN_KEY = "defeat-procrastination-plan";
+
+function showPlan(plan) {
+  document.getElementById("planOut").textContent =
+    "Your plan: When " + plan.when + ", at " + plan.where + ", I will " + plan.step.charAt(0).toLowerCase() + plan.step.slice(1);
+}
+
 document.getElementById("planSave").addEventListener("click", function () {
   const when = document.getElementById("planWhen").value.trim();
+  const where = document.getElementById("planWhere").value.trim();
   const out = document.getElementById("planOut");
-  if (!when) {
-    out.textContent = "Add a time or place first.";
+
+  if (!when || !where) {
+    out.textContent = "Fill in both when and where.";
     return;
   }
-  out.textContent = 'Your plan: When it\'s "' + when + '", I will: ' + currentStep;
+
+  const plan = { when: when, where: where, step: currentStep };
+  try { localStorage.setItem(PLAN_KEY, JSON.stringify(plan)); }
+  catch (e) { console.log(e); }
+  showPlan(plan);
+});
+function builtInPlan() {
+  return [
+    ["Start", currentStep],
+    ["Then", "Keep going until the 5-minute timer ends. Messy is fine."],
+    ["Done when", "The timer ends. You're allowed to stop, and anything more is a bonus."],
+    ["If stuck", "Make the step even smaller, or breathe for a minute and try again."]
+  ];
+}
+
+function parsePlan(text) {
+  const labels = ["Start", "Then", "Done when", "If stuck"];
+  const lines = text.split("\n").map(function (l) { return l.trim(); }).filter(Boolean);
+  const out = [];
+  labels.forEach(function (label) {
+    const line = lines.find(function (l) {
+      return l.toLowerCase().startsWith(label.toLowerCase() + ":");
+    });
+    if (line) out.push([label, line.slice(label.length + 1).trim()]);
+  });
+  return out.length === 4 ? out : null;
+}
+
+function renderPlan(parts) {
+  const box = document.getElementById("planCraftOut");
+  box.innerHTML = "";
+  parts.forEach(function (p) {
+    const row = document.createElement("div");
+    row.className = "plan-line";
+    const label = document.createElement("strong");
+    label.textContent = p[0];
+    row.append(label, p[1]);
+    box.appendChild(row);
+  });
+}
+
+document.getElementById("planCraft").addEventListener("click", async function () {
+  const when = document.getElementById("planWhen").value.trim();
+  const where = document.getElementById("planWhere").value.trim();
+  const task = document.getElementById("task").value.trim();
+  const out = document.getElementById("planOut");
+
+  if (!task || !currentReason) {
+    out.textContent = "Type a task and pick a reason first.";
+    return;
+  }
+  if (!when || !where) {
+    out.textContent = "Fill in both when and where first.";
+    return;
+  }
+
+  const btn = document.getElementById("planCraft");
+  btn.disabled = true;
+  btn.textContent = "Crafting...";
+  out.textContent = "Crafting your plan for " + when + " at " + where + "...";
+
+  let parts = null;
+  try {
+    const res = await fetch(WORKER_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mode: "plan", task: task, reason: currentReason, when: when, where: where })
+    });
+    const data = await res.json();
+    if (data.reply) parts = parsePlan(data.reply);
+  } catch (err) {
+    console.log(err);
+  }
+
+  if (!parts) {
+    parts = builtInPlan();
+    out.textContent = "Here's a built-in plan (the AI couldn't answer right now):";
+  } else {
+    out.textContent = "Your plan for " + when + " at " + where + ":";
+  }
+
+  renderPlan(parts);
+  btn.disabled = false;
+  btn.textContent = "Craft it again";
 });
 
 // ---- Saved log and stats ----
@@ -406,8 +507,16 @@ function recordResult(started) {
     date: new Date().toISOString().slice(0, 10)
   });
   saveLog(log);
-  document.getElementById("startedPrompt").hidden = true;
+  document.getElementById("startedPrompt").hidden = true; 
+  
   renderStats();
+  try {
+    const saved = JSON.parse(localStorage.getItem(PLAN_KEY));
+    if (saved) {
+      document.getElementById("planBox").hidden = false;
+      showPlan(saved);
+    }
+  } catch (e) { console.log(e); }
 }
 
 function addRow(parent, label, value) {
