@@ -309,6 +309,21 @@ select option { background: #0b1220; color: #e8eefc; }
   .strat-name { display: block; font-family: var(--mono); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--warm); }
   .strat-do { display: block; margin: 6px 0; }
   .strat-why { display: block; font-size: 0.85rem; color: var(--muted); }
+  .poll { margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--line); }
+.poll h2 { margin: 0 0 8px; font-size: 1.1rem; }
+.poll p { margin: 0 0 12px; color: var(--muted); }
+.poll-link {
+  display: inline-block;
+  padding: 12px 20px;
+  border-radius: 12px;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  font-weight: 700;
+  text-decoration: none;
+  transition: background 0.2s, transform 0.15s;
+}
+.poll-link:hover { background: rgba(46, 230, 197, 0.12); transform: translateY(-2px); }
+.poll-link:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   </style>
 </head>
 <body>
@@ -373,7 +388,11 @@ select option { background: #0b1220; color: #e8eefc; }
   <button id="no" class="secondary">Not yet</button>
 </div>
 <p id="kindNote" class="insight"></p>
-
+<section class="poll">
+  <h2>Help me improve this</h2>
+  <p>This is a student project. Tell me how you handle starting assignments in this 1-minute anonymous survey.</p>
+  <a class="poll-link" href="https://docs.google.com/forms/d/e/1FAIpQLSc-_md9MhiqHrOT3dRN7dbwn4a6YOyZ0JzoP96xkBb6xQNwvA/viewform" target="_blank" rel="noopener noreferrer">Take the survey</a>
+</section>
 <section class="stats">
   <h2>Your pattern</h2>
   <div id="statsBody"></div>
