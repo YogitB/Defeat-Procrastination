@@ -4,6 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Defeat Procrastination</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
     
         :root {
@@ -60,7 +63,7 @@
     input:focus {
       outline: none;
       border-color: var(--accent);
-      box-shadow: 0 0 0 4px rgba(46, 230, 197, 0.18);
+      box-shadow: 0 0 0 4px rgba(207, 127, 87, 0.18);
     }
 
     button {
@@ -81,8 +84,7 @@
       color: var(--accent-dark);
       font-weight: 700;
     }
-    .primary:hover { background: #5cf0d6; }
-
+    .primary:hover { background: linear-gradient(135deg, #5cf0d6, #8ff5e4); }
     .secondary {
       width: 100%;
       padding: 12px;
@@ -100,7 +102,7 @@
       text-align: left;
       padding: 14px 16px;
       margin: 8px 0;
-      background: rgba(255, 255, 255, 0.05);
+      background: rgba(207, 0, 0, 0.05);
       color: var(--text);
       border: 1px solid var(--line);
     }
@@ -110,8 +112,8 @@
     #fix, #step { padding: 14px 16px; border-radius: 12px; margin: 12px 0 0; }
     #fix { background: rgba(255, 255, 255, 0.06); }
     #step {
-      background: rgba(46, 230, 197, 0.12);
-      border: 1px solid rgba(46, 230, 197, 0.35);
+      background: rgba(46, 230, 132, 0.12);
+      border: 1px solid rgba(82, 109, 104, 0.35);
       font-weight: 600;
     }
 
@@ -169,10 +171,134 @@
   .toolkit li { margin: 6px 0; font-weight: 400; }
   .result-title { font-size: 1.2rem; }
   .result-note { font-weight: 400; color: var(--muted); font-size: 0.85rem; }
+  :root {
+    --warm: #ffb86b;
+    --display: "Bricolage Grotesque", system-ui, sans-serif;
+    --sans: "DM Sans", system-ui, sans-serif;
+    --mono: "DM Mono", ui-monospace, monospace;
+  }
+  /* ===== Glow-up ===== */
+:root {
+  --warm: #ffb86b;
+  --display: "Bricolage Grotesque", system-ui, sans-serif;
+  --sans: "DM Sans", system-ui, sans-serif;
+  --mono: "DM Mono", ui-monospace, monospace;
+}
+
+::selection { background: var(--accent); color: #0b1220; }
+
+body {
+  font-family: var(--sans);
+  background:
+    radial-gradient(900px 500px at 8% -10%, rgba(46, 230, 197, 0.2), transparent 60%),
+    radial-gradient(700px 500px at 100% 0%, rgba(255, 184, 107, 0.13), transparent 55%),
+    linear-gradient(180deg, #0b1220, #080d18);
+  background-attachment: fixed;
+}
+
+.card {
+  max-width: 560px;
+  padding: 38px 32px;
+  border-radius: 28px;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.09);
+}
+
+.eyebrow {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--warm);
+  margin: 0 0 10px;
+}
+
+h1 {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: clamp(2.2rem, 7vw, 3.2rem);
+  line-height: 1.02;
+  letter-spacing: -0.035em;
+  margin: 0 0 12px;
+}
+h1 span {
+  background: linear-gradient(95deg, #ffffff 5%, var(--accent) 55%, #7ef0ff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.subtitle { font-size: 1.05rem; max-width: 38ch; margin: 0 0 26px; }
+h2 { font-family: var(--display); letter-spacing: -0.02em; }
+input { font-family: inherit; }
+
+.primary {
+  background: linear-gradient(135deg, var(--accent), #5cf0d6);
+  box-shadow: 0 8px 24px rgba(46, 230, 197, 0.28);
+  letter-spacing: 0.02em;
+}
+.primary:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(46, 230, 197, 0.4); }
+#go::after { content: "  →"; }
+
+#reasonButtons { counter-reset: reason; }
+#reasonButtons button {
+  counter-increment: reason;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-family: var(--sans);
+  font-weight: 500;
+}
+#reasonButtons button::before {
+  content: counter(reason);
+  flex: none;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  color: var(--warm);
+  border: 1px solid rgba(255, 184, 107, 0.5);
+}
+
+#output { font-family: var(--display); font-size: 1.3rem; color: var(--text); letter-spacing: -0.01em; }
+#fix { border-left: 4px solid var(--warm); }
+#technique { font-family: var(--mono); font-size: 0.78rem; line-height: 1.6; }
+#technique strong { color: var(--warm); text-transform: uppercase; letter-spacing: 0.08em; }
+#step {
+  font-family: var(--display);
+  font-size: 1.2rem;
+  line-height: 1.3;
+  box-shadow: 0 0 40px rgba(46, 230, 197, 0.12);
+}
+
+#timer {
+  font-family: var(--mono);
+  font-weight: 500;
+  font-size: 3.4rem;
+  letter-spacing: -0.02em;
+  text-shadow: 0 0 36px rgba(46, 230, 197, 0.4);
+}
+
+.plan-line strong, .result-title { font-family: var(--mono); }
+.plan-line strong { color: var(--warm); }
+.result-title { color: var(--accent); }
+.stat-row span:last-child { font-family: var(--mono); color: var(--warm); }
+.res-link strong { font-family: var(--display); letter-spacing: -0.01em; }
+.bubble { font-size: 0.95rem; }
+.bubble.user { background: linear-gradient(135deg, var(--accent), #5cf0d6); }
+
+@media (max-width: 480px) {
+  .card { padding: 28px 20px; border-radius: 22px; }
+}
   </style>
 </head>
 <body>
-  <h1>Defeat Procrastination</h1>
+  <main class="card">
+  <p class="eyebrow">Start small. Start now.</p>
+  <h1><span>Defeat Procrastination</span></h1>
+  <p class="subtitle">Find out why you're stuck, then take one tiny step.</p>
   <input type="text" id="task" placeholder="What are you avoiding?">
   <button id="go" class="primary">Next</button>
   <div id="reasonButtons"></div>
@@ -224,7 +350,7 @@
   <div id="statsBody"></div>
 </section>
   
-
+  </main>
   <script>
     const reasons = {
   boring: {
@@ -269,8 +395,14 @@
 
 
     go.addEventListener("click", function () {
-      const task = document.getElementById("task").value;
-      document.getElementById("output").textContent = "You're avoiding: " + task;
+      const task = document.getElementById("task").value.trim();
+      if (!task){
+
+        document.getElementById("output").textContent = "Type what you're avoiding first."
+        return;
+      }
+      document.getElementById("output").textContent = "You're avoiding: "+task;
+
       const box = document.getElementById("reasonButtons");
       box.innerHTML = "";
       document.getElementById("quizStart").hidden=false;
