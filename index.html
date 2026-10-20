@@ -292,6 +292,23 @@ input { font-family: inherit; }
 @media (max-width: 480px) {
   .card { padding: 28px 20px; border-radius: 22px; }
 }
+#timerPicker { margin-top: 16px; }
+select {
+  width: 100%;
+  padding: 12px 14px;
+  margin-top: 6px;
+  font: inherit;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 4px rgba(46, 230, 197, 0.18); }
+select:disabled { opacity: 0.5; cursor: not-allowed; }
+select option { background: #0b1220; color: #e8eefc; }
+  .strat-name { display: block; font-family: var(--mono); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--warm); }
+  .strat-do { display: block; margin: 6px 0; }
+  .strat-why { display: block; font-size: 0.85rem; color: var(--muted); }
   </style>
 </head>
 <body>
@@ -316,6 +333,8 @@ input { font-family: inherit; }
   <p id="technique"></p>
   <p id="step"></p>
   <button id="aiStep" class="secondary" hidden>Make my step more specific</button>
+  <button id="strategyBtn" class="secondary" hidden>Get detailed strategies</button>
+  <div id="strategyOut" class="plan-card"></div>
   <section id="chat" class="chat" hidden>
   <div id="chatLog" class="chat-log" aria-live="polite"></div>
   <div class="chat-row">
@@ -325,7 +344,16 @@ input { font-family: inherit; }
   <p class="hint">This is a study helper, not therapy. If you're feeling really overwhelmed or down, talk to a trusted adult or school counselor. Please don't type personal information.</p>
 </section>
   <p id="timer"></p>
+  <div id="timerPicker" hidden>
+  <label for="timerLength" class="hint">Timer length</label>
+  <select id="timerLength">
+    <option value="5" selected>5 minutes</option>
+    <option value="10">10 minutes</option>
+    <option value="25">25 minutes</option>
+  </select>
+</div>
   <button id="startTimer" class="secondary" hidden >Start 5-minute timer</button>
+
   <button id="resetTimer" class="secondary" hidden>Reset</button>
    <div id="planBox" class="prompt" hidden>
     <p>Make an if-then plan</p>
@@ -417,7 +445,9 @@ input { font-family: inherit; }
             document.getElementById("fix").textContent = reasons[key].fix;
             document.getElementById("step").textContent = "Your tiny first step: " + reasons[key].step;
             document.getElementById("aiStep").hidden = false;       // new
-            document.getElementById("startTimer").hidden = false;   // new
+            document.getElementById("startTimer").hidden = false;
+            document.getElementById("strategyBtn").hidden = false;
+            document.getElementById("timerPicker").hidden=false;   // new
             currentStep = reasons[key].step;
             const tech = document.getElementById("technique");
             tech.textContent = "";
@@ -430,13 +460,18 @@ input { font-family: inherit; }
         box.appendChild(btn);
       }
     });
-const TIMER_SECONDS = 300;   //this can be changed
+let timerSeconds = 300;   // the chosen length, in seconds
 let timerId = null;
-let secondsLeft = TIMER_SECONDS;
+let secondsLeft = timerSeconds;
 let timerRunning = false;
 
 const startBtn = document.getElementById("startTimer");
 const resetBtn = document.getElementById("resetTimer");
+const picker = document.getElementById("timerLength");
+
+function startLabel() {
+  return "Start " + (timerSeconds / 60) + "-minute timer";
+}
 
 function showTime(seconds) {
   const mins = Math.floor(seconds / 60);
@@ -456,6 +491,7 @@ function startTimer() {
   document.getElementById("startedPrompt").hidden = true;
   document.getElementById("kindNote").textContent = "";
   timerRunning = true;
+  picker.disabled = true;
   showTime(secondsLeft);
   timerId = setInterval(tick, 1000);
   startBtn.textContent = "Pause";
@@ -471,21 +507,30 @@ function pauseTimer() {
 function resetTimer() {
   clearInterval(timerId);
   timerRunning = false;
-  secondsLeft = TIMER_SECONDS;
+  secondsLeft = timerSeconds;
   showTime(secondsLeft);
-  startBtn.textContent = "Start 5-minute timer";
+  picker.disabled = false;
+  startBtn.textContent = startLabel();
   resetBtn.hidden = true;
 }
 
 function finishTimer() {
   clearInterval(timerId);
   timerRunning = false;
-  secondsLeft = TIMER_SECONDS;
+  secondsLeft = timerSeconds;
   document.getElementById("timer").textContent = "0:00";
-  startBtn.textContent = "Start 5-minute timer";
+  picker.disabled = false;
+  startBtn.textContent = startLabel();
   resetBtn.hidden = true;
   document.getElementById("startedPrompt").hidden = false;
 }
+
+picker.addEventListener("change", function () {
+  timerSeconds = Number(picker.value) * 60;
+  secondsLeft = timerSeconds;
+  showTime(secondsLeft);
+  startBtn.textContent = startLabel();
+});
 
 startBtn.addEventListener("click", function () {
   if (timerRunning) pauseTimer();
@@ -565,7 +610,6 @@ async function sendToAI(userText) {
   chatSend.disabled = false;
   chatInput.focus();
 }
-// ---- If-then plan ----
 const PLAN_KEY = "defeat-procrastination-plan";
 
 function showPlan(plan) {
@@ -668,7 +712,7 @@ document.getElementById("planCraft").addEventListener("click", async function ()
   btn.textContent = "Craft it again";
 });
 
-// ---- Saved log and stats ----
+// Saves log
 const LOG_KEY = "defeat-procrastination-log";
 
 function loadLog() {
@@ -902,6 +946,90 @@ function showQuizResult() {
 }
 
 document.getElementById("quizStart").addEventListener("click", startQuiz);
+// Strategies
+function parseStrategies(text) {
+  const out = [];
+  text.split("\n").forEach(function (line) {
+    const parts = line.split("|").map(function (p) { return p.trim(); });
+    if (parts.length < 3) return;
+    const name = parts[0].replace(/^\d+[.)]\s*/, "").replace(/^NAME:\s*/i, "").trim();
+    const doText = parts[1].replace(/^DO:\s*/i, "").trim();
+    const why = parts[2].replace(/^WHY:\s*/i, "").trim();
+    if (name && doText && why) out.push({ name: name, doText: doText, why: why });
+  });
+  return out.length >= 2 ? out.slice(0, 3) : null;
+}
+
+function builtInStrategies() {
+  const key = Object.keys(reasons).find(function (k) {
+    return reasons[k].label === currentReason;
+  });
+  const items = (key && TOOLKIT[key]) ? TOOLKIT[key] : [];
+  return items.map(function (t) {
+    return { name: reasons[key].technique, doText: t, why: reasons[key].why };
+  });
+}
+
+function renderStrategies(list) {
+  const box = document.getElementById("strategyOut");
+  box.innerHTML = "";
+  list.forEach(function (s) {
+    const row = document.createElement("div");
+    row.className = "plan-line";
+    const n = document.createElement("span");
+    n.className = "strat-name";
+    n.textContent = s.name;
+    const d = document.createElement("span");
+    d.className = "strat-do";
+    d.textContent = s.doText;
+    const w = document.createElement("span");
+    w.className = "strat-why";
+    w.textContent = "Why it helps: " + s.why;
+    row.append(n, d, w);
+    box.appendChild(row);
+  });
+}
+
+document.getElementById("strategyBtn").addEventListener("click", async function () {
+  const task = document.getElementById("task").value.trim();
+  const btn = document.getElementById("strategyBtn");
+  const box = document.getElementById("strategyOut");
+
+  if (!task || !currentReason) {
+    box.textContent = "Type a task and pick a reason first.";
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = "Finding strategies...";
+  box.innerHTML = "";
+
+  let list = null;
+  try {
+    const res = await fetch(WORKER_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mode: "strategies", task: task, reason: currentReason })
+    });
+    const data = await res.json();
+    if (data.reply) list = parseStrategies(data.reply);
+  } catch (err) {
+    console.log(err);
+  }
+
+  if (list) {
+    renderStrategies(list);
+  } else {
+    renderStrategies(builtInStrategies());
+    const note = document.createElement("p");
+    note.className = "hint";
+    note.textContent = "These are built-in strategies (the AI couldn't answer right now).";
+    box.appendChild(note);
+  }
+
+  btn.disabled = false;
+  btn.textContent = "Get new strategies";
+});
 renderStats();
 document.getElementById("aiStep").addEventListener("click", function () {
   const task = document.getElementById("task").value.trim();
