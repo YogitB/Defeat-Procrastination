@@ -31,7 +31,8 @@ One person wanted help for building practice questions. I didn't build that, and
 
 
 
-What it does
+What it does:
+It calls the task that you are procrastinationg on. Next it figures out where and why you are stuck. After it builds custom steps and creates a techinque. The AI crafts a 4-step plan for you to get on track. You can run a timer for specific strategies.
 
 
 
@@ -39,34 +40,32 @@ This is a study helper. **It is not therapy and not a diagnosis.** It points peo
 
 
 
-How it works
+How it works: It was built with HTML as the website. I use Cloudfare Worker for the API and AI integration. The CSS was coded for the AI and the UI was built with HTML and Javascript.
 
 
 
-Built with
+Built with:
 
 HTML, CSS, JavaScript, Cloudflare Workers, Cloudflare Workers AI, GitHub Pages, Google Forms (for the survey), Google Fonts (Bricolage Grotesque, DM Sans, DM Mono).
 
-Techniques used
-
-
+Techniques used:
 
 These are common, widely used study and habit techniques. I chose them and matched them to reasons myself, and I did not run a study to test how well they work.
 
-Challenges I ran into throughout the journey
+Challenges I ran into throughout the journey:
 
 
 CORS errors: My page was blocked from calling the Worker until I let it have access to the adresses, and I learned I had to test through a local server (Live Server) instead of opening the file directly. Through this I became familiar withe the Live Server extension.
 Small AI models don't always follow instructions. I had to customize between the amount of maxTokens per each user allowing detail through the sentences.
-I found the ai quite slow in the beginning because of it using an older outdated model.
+I found the ai quite slow in the beginning because of it using an older outdated model. Small typo bugs that prevented elements from working.
 
-Small typo bugs that prevented elements from working.
-
- What I learned
-
+ What I learned:
+This was my first time experimenting with an API and inegrating it into an website. How to save data in storage. Asking real people and researching procrastination.
 
 
-What I'd do next
+What I'd do next: 
+As per the responses on the google form I would like everyone to reach a daily total of 5 logs a day on this such as a streak counter,
+An bigger survey representing a bigger population.
 
 
 
