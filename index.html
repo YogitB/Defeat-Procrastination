@@ -743,13 +743,33 @@ function saveLog(log) {
   try { localStorage.setItem(LOG_KEY, JSON.stringify(log)); }
   catch (e) { console.log(e); }
 }
+function localDate(d) {
+  d = d || new Date();
+  return d.getFullYear() + "-" +
+    String(d.getMonth() + 1).padStart(2, "0") + "-" +
+    String(d.getDate()).padStart(2, "0");
+}
 
+function currentStreak(log) {
+  const days = new Set(
+    log.filter(function (x) { return x.started; })
+       .map(function (x) { return x.date; })
+  );
+  const d = new Date();
+  if (!days.has(localDate(d))) d.setDate(d.getDate() - 1);
+  let count = 0;
+  while (days.has(localDate(d))) {
+    count++;
+    d.setDate(d.getDate() - 1);
+  }
+  return count;
+}
 function recordResult(started) {
   const log = loadLog();
   log.push({
     reason: currentReason,
     started: started,
-    date: new Date().toISOString().slice(0, 10)
+    data: locatDate()
   });
   saveLog(log);
   document.getElementById("startedPrompt").hidden = true; 
@@ -792,6 +812,8 @@ function renderStats() {
 
   addRow(body, "Timers finished", log.length);
   addRow(body, "Times you started", startedCount + " (" + Math.round(startedCount / log.length * 100) + "%)");
+    const streak = currentStreak(log);
+  addRow(body, "Day streak", streak > 0 ? streak + (streak === 1 ? " day" : " days") : "0 (start one today)");
   addRow(body, "Most common reason", top);
 
   const note = document.createElement("p");
