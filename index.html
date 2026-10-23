@@ -341,6 +341,17 @@ select option { background: #0b1220; color: #e8eefc; }
 .reco p { margin: 8px 0 0; }
 .fb-row { display: flex; gap: 8px; }
 .fb-row button { flex: 1; }
+#weekChart { margin-top: 18px; }
+.week-title { font-family: var(--mono); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--warm); margin: 0 0 4px; }
+.week { display: flex; gap: 8px; height: 110px; margin-top: 10px; }
+.wk { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.wk-bars { position: relative; flex: 1; width: 100%; }
+.wk-tries, .wk-starts { position: absolute; left: 0; right: 0; bottom: 0; border-radius: 6px; transition: height 0.5s ease; }
+.wk-tries { background: rgba(157, 176, 208, 0.3); }
+.wk-starts { background: linear-gradient(180deg, #7ef0ff, var(--accent)); }
+.wk-label { font-family: var(--mono); font-size: 0.7rem; color: var(--muted); }
+.legend { display: flex; gap: 14px; margin-top: 10px; font-size: 0.78rem; color: var(--muted); }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; }
 </style>
 </head>
 <body>
@@ -426,6 +437,7 @@ select option { background: #0b1220; color: #e8eefc; }
 <section class="stats">
   <h2>Your pattern</h2>
   <div id="statsBody"></div>
+  <div id="weekChart"></div>
 </section>
   
   </main>
@@ -824,9 +836,86 @@ function addRow(parent, label, value) {
   row.append(a, b);
   parent.appendChild(row);
 }
+function dayKey(d) {
+  return d.getFullYear() + "-" +
+    String(d.getMonth() + 1).padStart(2, "0") + "-" +
+    String(d.getDate()).padStart(2, "0");
+}
 
+function renderWeek() {
+  const box = document.getElementById("weekChart");
+  box.innerHTML = "";
+  const log = loadLog();
+
+  const days = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    days.push(d);
+  }
+
+  let totalTries = 0;
+  let totalStarts = 0;
+  const data = days.map(function (d) {
+    const key = dayKey(d);
+    const entries = log.filter(function (x) { return x.date === key; });
+    const starts = entries.filter(function (x) { return x.started; }).length;
+    totalTries += entries.length;
+    totalStarts += starts;
+    return {
+      label: d.toLocaleDateString(undefined, { weekday: "short" }),
+      tries: entries.length,
+      starts: starts
+    };
+  });
+
+  if (totalTries === 0) return;
+
+  const max = Math.max(3, Math.max.apply(null, data.map(function (x) { return x.tries; })));
+  const pct = Math.round(totalStarts / totalTries * 100);
+
+  box.append(makeEl("p", "Your starting score, last 7 days", "week-title"));
+  box.append(makeEl("p",
+    "You started " + totalStarts + " of " + totalTries + " tries (" + pct + "%). " +
+    "Starting counts, even if you didn't finish.", "hint"));
+
+  const chart = document.createElement("div");
+  chart.className = "week";
+  data.forEach(function (x) {
+    const col = document.createElement("div");
+    col.className = "wk";
+    const bars = document.createElement("div");
+    bars.className = "wk-bars";
+
+    const t = document.createElement("div");
+    t.className = "wk-tries";
+    t.style.height = x.tries ? Math.max(8, x.tries / max * 100) + "%" : "0%";
+    const s = document.createElement("div");
+    s.className = "wk-starts";
+    s.style.height = x.starts ? Math.max(8, x.starts / max * 100) + "%" : "0%";
+
+    bars.append(t, s);
+    col.append(bars, makeEl("span", x.label, "wk-label"));
+    chart.append(col);
+  });
+  box.append(chart);
+
+  const legend = document.createElement("div");
+  legend.className = "legend";
+  const a = document.createElement("span");
+  const ai = document.createElement("i");
+  ai.style.background = "rgba(157, 176, 208, 0.5)";
+  a.append(ai, "Tries");
+  const b = document.createElement("span");
+  const bi = document.createElement("i");
+  bi.style.background = "var(--accent)";
+  b.append(bi, "Starts");
+  legend.append(a, b);
+  box.append(legend);
+}
 function renderStats() {
   const body = document.getElementById("statsBody");
+  renderWeek();
   body.innerHTML = "";
   const log = loadLog();
 
