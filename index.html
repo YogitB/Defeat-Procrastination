@@ -324,7 +324,24 @@ select option { background: #0b1220; color: #e8eefc; }
 }
 .poll-link:hover { background: rgba(46, 230, 197, 0.12); transform: translateY(-2px); }
 .poll-link:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
-  </style>
+.match { margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--line); }
+.match h2 { margin: 0 0 6px; font-size: 1.1rem; }
+#matchOpts button { display: block; width: 100%; text-align: left; padding: 12px 14px; margin: 8px 0; background: rgba(255, 255, 255, 0.05); color: var(--text); border: 1px solid var(--line); }
+#matchOpts button:hover { border-color: var(--accent); }
+#matchResult { margin-top: 16px; }
+.bar-row { margin: 12px 0; }
+.bar-label { display: flex; justify-content: space-between; font-size: 0.95rem; }
+.bar-label span:last-child { font-family: var(--mono); color: var(--warm); }
+.bar-track { height: 12px; margin-top: 5px; border-radius: 99px; background: rgba(255, 255, 255, 0.08); overflow: hidden; }
+.bar-fill { height: 100%; width: 0; border-radius: 99px; background: rgba(157, 176, 208, 0.55); transition: width 0.6s ease; }
+.bar-fill.top { background: linear-gradient(90deg, var(--accent), #7ef0ff); }
+.tag { display: block; margin-top: 3px; font-family: var(--mono); font-size: 0.72rem; color: var(--muted); }
+.reco { margin-top: 18px; padding: 16px; border-radius: 14px; border-left: 4px solid var(--accent); background: rgba(46, 230, 197, 0.1); }
+.reco strong { font-family: var(--display); font-size: 1.1rem; }
+.reco p { margin: 8px 0 0; }
+.fb-row { display: flex; gap: 8px; }
+.fb-row button { flex: 1; }
+</style>
 </head>
 <body>
   <main class="card">
@@ -388,6 +405,19 @@ select option { background: #0b1220; color: #e8eefc; }
   <button id="no" class="secondary">Not yet</button>
 </div>
 <p id="kindNote" class="insight"></p>
+<section class="match">
+  <h2>Study Strategy Match</h2>
+  <p class="hint">Answer 2 quick questions to compare study techniques for your situation.</p>
+  <button id="matchStart" class="secondary">Find my study strategy</button>
+
+  <div id="matchQuiz" class="prompt" hidden>
+    <p id="matchQ"></p>
+    <div id="matchOpts"></div>
+    <p id="matchProgress" class="hint"></p>
+  </div>
+
+  <div id="matchResult" hidden></div>
+</section>
 <section class="poll">
   <h2>Help me improve this</h2>
   <p>This is a student project. Tell me how you handle starting assignments in this 1-minute anonymous survey.</p>
@@ -834,7 +864,7 @@ document.getElementById("no").addEventListener("click", function () {
     "That's okay. Everyone gets stuck. Try an even smaller step, or pick a time to try again.";
 });
 
-// ---- Self-check quiz ----
+// Quiz
 const QUIZ = [
   { q: "When you picture starting, what's your first feeling?", a: [
     ["Ugh, this is so boring", { boring: 2 }],
@@ -985,9 +1015,237 @@ function showQuizResult() {
 
   box.hidden = false;
 }
+// Find study strategy match
+const MATCH_KEY = "defeat-procrastination-match";
 
+const TECHS = {
+  practice: {
+    name: "Practice questions",
+    evidence: "Strong research support",
+    why: "Trying to recall answers without looking shows you what you know and what to review.",
+    tryIt: "Write or find five questions, answer them without your notes, then check and review the ones you missed."
+  },
+  flash: {
+    name: "Flashcards",
+    evidence: "Strong research support",
+    why: "Flipping a card forces you to pull the answer from memory, one small piece at a time.",
+    tryIt: "Make 10 cards for the most important facts, go through them once, and set aside the ones you missed."
+  },
+  teach: {
+    name: "Teach it aloud",
+    evidence: "Some research support",
+    why: "Explaining an idea in your own words shows you where your understanding has gaps.",
+    tryIt: "Explain the topic out loud for two minutes as if teaching a friend, then note where you got stuck."
+  },
+  reread: {
+    name: "Rereading",
+    evidence: "Limited support",
+    why: "It feels productive, but it's passive, so it works best as a quick warm-up and not as your main method.",
+    tryIt: "Skim your notes once, then switch to a technique where you have to recall things."
+  },
+  breakdown: {
+    name: "Task breakdown",
+    evidence: "Practical habit tip",
+    why: "Splitting a big task into small parts makes the first step clear and doable.",
+    tryIt: "List 3 to 5 small parts of the task and do only the first one."
+  },
+  sprint: {
+    name: "Focused sprint",
+    evidence: "Practical habit tip",
+    why: "A short, timed burst with a planned break makes working feel finite.",
+    tryIt: "Set a 10-minute timer, work on one thing only, then take a real 3-minute break."
+  },
+  twomin: {
+    name: "Two-minute start",
+    evidence: "Practical habit tip",
+    why: "Committing to just two minutes lowers the barrier to starting, and you can stop after.",
+    tryIt: "Open what you need and work for two minutes. After that, you decide whether to keep going."
+  }
+};
+
+const MATCH_QUESTIONS = [
+  { id: "goal", q: "What are you trying to do?", opts: [
+    ["Memorize facts", "facts"],
+    ["Understand concepts", "concepts"],
+    ["Prepare for a test", "test"],
+    ["Start a big assignment", "assignment"]
+  ]},
+  { id: "obstacle", q: "What's getting in the way the most?", opts: [
+    ["It's boring", "boring"],
+    ["I feel overwhelmed", "overwhelmed"],
+    ["I don't know where to start", "nostart"],
+    ["I forget things", "remember"]
+  ]}
+];
+
+// Starting fit score from 0-10
+const BASE = {
+  facts:      { practice: 8, flash: 8, teach: 5, reread: 3, breakdown: 4, sprint: 5, twomin: 4 },
+  concepts:   { practice: 7, flash: 4, teach: 8, reread: 4, breakdown: 5, sprint: 5, twomin: 4 },
+  test:       { practice: 9, flash: 7, teach: 6, reread: 3, breakdown: 5, sprint: 6, twomin: 4 },
+  assignment: { practice: 2, flash: 1, teach: 4, reread: 2, breakdown: 9, sprint: 7, twomin: 7 }
+};
+
+// Adjustments for obstacle
+const ADJUST = {
+  boring:      { sprint: 1.5, teach: 1, practice: 0.5, reread: -1 },
+  overwhelmed: { breakdown: 2, twomin: 1.5, sprint: 1, practice: -0.5 },
+  nostart:     { twomin: 2, breakdown: 1.5, practice: 0.5, reread: -0.5 },
+  remember:    { practice: 1.5, flash: 1.5, teach: 1, reread: -1 }
+};
+
+const OBS_NOTE = {
+  boring: "Short, active sessions can make a boring task feel more manageable.",
+  overwhelmed: "Small pieces can make a heavy task feel lighter.",
+  nostart: "A very small first action can get you past the starting point.",
+  remember: "Recalling things from memory is more work than rereading, and that effort is what helps you remember."
+};
+
+let matchStep = 0;
+let matchAnswers = {};
+
+function loadMatch() {
+  try { return JSON.parse(localStorage.getItem(MATCH_KEY)) || {}; }
+  catch (e) { return {}; }
+}
+
+function saveMatch(data) {
+  try { localStorage.setItem(MATCH_KEY, JSON.stringify(data)); }
+  catch (e) { console.log(e); }
+}
+
+function personalBonus(id, feedback) {
+  const f = feedback[id];
+  if (!f) return 0;
+  const raw = ((f.yes || 0) - (f.no || 0)) * 0.5;
+  return Math.max(-1.5, Math.min(1.5, raw));
+}
+
+function computeScores() {
+  const feedback = loadMatch();
+  const list = Object.keys(TECHS).map(function (id) {
+    let s = BASE[matchAnswers.goal][id] || 0;
+    s += ADJUST[matchAnswers.obstacle][id] || 0;
+    s += personalBonus(id, feedback);
+    s = Math.max(0, Math.min(10, s));
+    return { id: id, score: Math.round(s * 2) / 2 };
+  });
+  list.sort(function (a, b) { return b.score - a.score; });
+  return list;
+}
+
+function recordMatchFeedback(id, helped) {
+  const feedback = loadMatch();
+  feedback[id] = feedback[id] || { yes: 0, no: 0 };
+  if (helped) feedback[id].yes++;
+  else feedback[id].no++;
+  saveMatch(feedback);
+}
+
+function startMatch() {
+  matchStep = 0;
+  matchAnswers = {};
+  document.getElementById("matchResult").hidden = true;
+  document.getElementById("matchQuiz").hidden = false;
+  showMatchQuestion();
+}
+
+function showMatchQuestion() {
+  const item = MATCH_QUESTIONS[matchStep];
+  document.getElementById("matchQ").textContent = item.q;
+  document.getElementById("matchProgress").textContent =
+    "Question " + (matchStep + 1) + " of " + MATCH_QUESTIONS.length;
+
+  const opts = document.getElementById("matchOpts");
+  opts.innerHTML = "";
+  item.opts.forEach(function (opt) {
+    const b = document.createElement("button");
+    b.textContent = opt[0];
+    b.addEventListener("click", function () {
+      matchAnswers[item.id] = opt[1];
+      matchStep++;
+      if (matchStep < MATCH_QUESTIONS.length) showMatchQuestion();
+      else showMatchResult();
+    });
+    opts.appendChild(b);
+  });
+}
+
+function showMatchResult() {
+  document.getElementById("matchQuiz").hidden = true;
+
+  const scores = computeScores();
+  const topId = scores[0].id;
+  const top = TECHS[topId];
+
+  const box = document.getElementById("matchResult");
+  box.innerHTML = "";
+
+  box.append(makeEl("p", "How well each technique fits your situation", "result-title"));
+  box.append(makeEl("p", "Fit scores out of 10, from simple rules I wrote. They are not measured effectiveness.", "hint"));
+
+  const chart = document.createElement("div");
+  scores.forEach(function (s, i) {
+    const t = TECHS[s.id];
+    const row = document.createElement("div");
+    row.className = "bar-row";
+
+    const label = document.createElement("div");
+    label.className = "bar-label";
+    label.append(makeEl("span", t.name), makeEl("span", s.score + "/10"));
+
+    const track = document.createElement("div");
+    track.className = "bar-track";
+    const fill = document.createElement("div");
+    fill.className = "bar-fill" + (i === 0 ? " top" : "");
+    fill.dataset.w = s.score * 10;
+    track.append(fill);
+
+    row.append(label, track, makeEl("span", t.evidence, "tag"));
+    chart.append(row);
+  });
+  box.append(chart);
+
+  const reco = document.createElement("div");
+  reco.className = "reco";
+  reco.append(makeEl("strong", "Top recommendation: " + top.name));
+  reco.append(makeEl("p", "Why it fits: " + top.why + " " + OBS_NOTE[matchAnswers.obstacle]));
+  reco.append(makeEl("p", "Try it now: " + top.tryIt));
+  box.append(reco);
+
+  box.append(makeEl("p", "After you try it, did it help?", "hint"));
+  const fb = document.createElement("div");
+  fb.className = "fb-row";
+  const yes = makeEl("button", "It helped", "secondary");
+  const no = makeEl("button", "Not really", "secondary");
+  function answer(helped) {
+    recordMatchFeedback(topId, helped);
+    fb.replaceWith(makeEl("p", "Thanks. I'll weigh that in next time, on this device only.", "hint"));
+  }
+  yes.addEventListener("click", function () { answer(true); });
+  no.addEventListener("click", function () { answer(false); });
+  fb.append(yes, no);
+  box.append(fb);
+
+  const again = makeEl("button", "Start over", "secondary");
+  again.addEventListener("click", startMatch);
+  box.append(again);
+
+  box.append(makeEl("p",
+    "Evidence tags are general summaries of study-skills advice, not a promise it will work for you.",
+    "hint"));
+
+  box.hidden = false;
+  setTimeout(function () {
+    chart.querySelectorAll(".bar-fill").forEach(function (f) {
+      f.style.width = f.dataset.w + "%";
+    });
+  }, 50);
+}
+
+document.getElementById("matchStart").addEventListener("click", startMatch);
 document.getElementById("quizStart").addEventListener("click", startQuiz);
-// Strategies
+// Strategies needed
 function parseStrategies(text) {
   const out = [];
   text.split("\n").forEach(function (line) {
