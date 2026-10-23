@@ -7,13 +7,12 @@ Live app: https://yogitb.github.io/Defeat-Procrastination/
 
 Category: Education and Access along with Health and Wellbeing
 
-The conflicting problem:
+What is the specific problem, and how do you know it's real?:
 
-Putting things off is not created by lazyiness and lack of motivation. Instead people put things off because starting feels bad. Reasons include mental problems, fear of failing, lack of understanding. Current apps and solutions  treat all procrastination the same (a to-do list, a timer), and this does not fix the problem.
+Putting things off is not created by lazyiness and lack of motivation. Instead people put things off because starting feels bad. Reasons include mental problems, fear of failing, lack of understanding. Current apps and solutions  treat all procrastination the same (a to-do list, a timer), and this does not fix the problem. Many of the tools that we have today organize tasks while shifting away from addressing the reason that the student is struggling.
+My community is the students and classmates in my High School. They are all my target community as I wish to connect this project and expand it as students can benefit from operating deadlines.
 
-My community is the students and classmates in my High School.
-
-Observations from the survey: Personally, I tend to put off things right before the due date such as assignments, deadlines, and chores. I noticed this trend among many other of my classmates that I surveyed presenting an common problem. I noticed this and its because many are not brave to go on with the task.
+Observations from the survey: Personally, I tend to put off things right before the due date such as assignments, deadlines, and chores. I noticed this trend among many other of my classmates that I surveyed presenting an common problem. I noticed this and its because many are not brave to go on with the task. This helped me shape the finding from the app to focusing on the barriers that prevent classmates from working productively.
 
 Google form questions
 How often do you start assignments the night before? , 6 of 9 said "Often" or "Almost always" (3 each). The other 3 said "Sometimes". Nobody said "Never".
@@ -31,8 +30,13 @@ One person wanted help for building practice questions. I didn't build that, and
 
 
 
+
 What it does:
-It calls the task that you are procrastinationg on. Next it figures out where and why you are stuck. After it builds custom steps and creates a techinque. The AI crafts a 4-step plan for you to get on track. You can run a timer for specific strategies.
+1. Identify the task by recording what the student enters
+2. It discovers what the main obstacle is from asking the user questions
+3. The AI generates a 4 step plan customized for the user to maintain focus
+4. An timer is included to set small study goals along with streaks and an analysis of study strategies
+
 
 
 
@@ -40,27 +44,37 @@ This is a study helper. **It is not therapy and not a diagnosis.** It points peo
 
 
 
-How it works: It was built with HTML as the website. I use Cloudfare Worker for the API and AI integration. The CSS was coded for the AI and the UI was built with HTML and Javascript.
+How it works: 
+1. I used the HTML to create elements to create a trendy vide for the students such as large buttons and specific fonts.
+2. The CSS designed the appearance of the website such as the layout and the spacing in inputs.
+3. Javascript helped the website become interactive by responding to users actions and reading inputs.
+4. Cloud flare workers acted as the backbone by supporting the backend code for the AI services.
+5. The AI from CLOUDFLARE WORKERS generated responses and built a plan based for the applicants.
 
 
 
 Built with:
+1. HTML is used for the strucutre of the page and the buttons
+2. CSS is used for the interface and styling of the webpage. 
+3. Javascript is used for the app logic and for the interactions of elements
+4. Cloudflare Workers was integrated for the AI requests through the backend API endpoint
+5. Cloudflare Workers AI is used for all AI responsibilities in the page
+6. Github pages for the website hosting.
 
-HTML, CSS, JavaScript, Cloudflare Workers, Cloudflare Workers AI, GitHub Pages, Google Forms (for the survey), Google Fonts (Bricolage Grotesque, DM Sans, DM Mono).
 
 Techniques used:
 
-These are common, widely used study and habit techniques. I chose them and matched them to reasons myself, and I did not run a study to test how well they work.
+These are common, widely used study and habit techniques. I chose them and matched them to reasons myself, and I did not run a study to test how well they work. The matches based on the obstacles reflect my own capability to make decisions.
 
 Challenges I ran into throughout the journey:
 
 
-CORS errors: My page was blocked from calling the Worker until I let it have access to the adresses, and I learned I had to test through a local server (Live Server) instead of opening the file directly. Through this I became familiar withe the Live Server extension.
+CORS errors/API integration: My page was blocked from calling the Worker until I let it have access to the adresses. I primarily reversed engineered through how browser requests work and how to configure the backend. Through this I learned I had to test through a local server (Live Server) instead of opening the file directly. Through this I became familiar withe the Live Server extension.
 Small AI models don't always follow instructions. I had to customize between the amount of maxTokens per each user allowing detail through the sentences.
 I found the ai quite slow in the beginning because of it using an older outdated model. Small typo bugs that prevented elements from working.
 
- What I learned:
-This was my first time experimenting with an API and inegrating it into an website. How to save data in storage. Asking real people and researching procrastination.
+What I learned:
+This was my first time experimenting with an API and inegrating it into an website. Through this hackathon I gained experience with frontend developement, exposure to backend requests, AI integration, how to save data in storage while asking real people and researching procrastination.
 
 
 What I'd do next: 
