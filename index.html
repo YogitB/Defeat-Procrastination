@@ -599,7 +599,6 @@ startBtn.addEventListener("click", function () {
 });
 
 resetBtn.addEventListener("click", resetTimer);
-          document.getElementById("startTimer").addEventListener("click", startTimer);
           const WORKER_URL = "https://procrastination-ai.yogirith41.workers.dev/";
 const chat = document.getElementById("chat");
 const chatLog = document.getElementById("chatLog");
@@ -811,7 +810,7 @@ function recordResult(started) {
   log.push({
     reason: currentReason,
     started: started,
-    data: locatDate()
+    data: localDate()
   });
   saveLog(log);
   document.getElementById("startedPrompt").hidden = true; 
