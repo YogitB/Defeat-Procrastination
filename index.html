@@ -1034,122 +1034,129 @@ function renderWeek() {
   box.append(legend);
 }
 
+
 function renderStats() {
   const body = document.getElementById("statsBody");
   renderWeek();
   body.innerHTML = "";
 
-  const log = loadLog();
+  const log = loadLog().filter(function (entry) {
+    return typeof entry.reason === "string" && entry.reason;
+  });
 
   if (log.length === 0) {
     body.textContent =
-      "Your insights will appear here after you use the app.";
+      "Finish a timer and record your result to unlock your insights.";
     return;
   }
 
-  // Calculate overall progress
   const startedCount = log.filter(function (entry) {
     return entry.started === true;
   }).length;
 
-  addRow(body, "Attempts logged", log.length);
-  addRow(
-    body,
-    "Times you started",
-    startedCount + " (" +
-      Math.round(startedCount / log.length * 100) + "%)"
-  );
-
-  const streak = currentStreak(log);
-  addRow(
-    body,
-    "Day streak",
-    streak > 0
-      ? streak + (streak === 1 ? " day" : " days")
-      : "0 (start one today)"
-  );
-
-  // Count how often each obstacle was selected
   const counts = {};
+  const starts = {};
 
   log.forEach(function (entry) {
-    if (typeof entry.reason === "string" && entry.reason.trim()) {
-      counts[entry.reason] = (counts[entry.reason] || 0) + 1;
+    counts[entry.reason] = (counts[entry.reason] || 0) + 1;
+
+    if (entry.started === true) {
+      starts[entry.reason] = (starts[entry.reason] || 0) + 1;
     }
   });
 
-  const rankedReasons = Object.keys(counts).sort(function (a, b) {
+  const ranked = Object.keys(counts).sort(function (a, b) {
     return counts[b] - counts[a];
   });
 
-  if (rankedReasons.length === 0) {
-    const message = document.createElement("p");
-    message.className = "insight";
-    message.textContent =
-      "Keep using the app to build your personalized insights.";
-    body.appendChild(message);
-    return;
+  const top = ranked[0];
+
+  addRow(body, "Attempts recorded", log.length);
+  addRow(body, "Times you started",
+    startedCount + " (" +
+    Math.round(startedCount / log.length * 100) + "%)");
+  addRow(body, "Most common obstacle", top);
+
+  // Create a graph section
+  function addGraph(title, description, values, percentageMode) {
+    const section = document.createElement("div");
+    section.style.marginTop = "22px";
+
+    const heading = document.createElement("h3");
+    heading.textContent = title;
+    heading.style.fontSize = "1rem";
+    section.appendChild(heading);
+
+    const subtitle = document.createElement("p");
+    subtitle.className = "hint";
+    subtitle.textContent = description;
+    section.appendChild(subtitle);
+
+    const maxValue = percentageMode
+      ? 100
+      : Math.max(1, ...Object.values(values));
+
+    ranked.forEach(function (reason) {
+      const count = counts[reason] || 0;
+      const started = starts[reason] || 0;
+      const value = percentageMode
+        ? Math.round(started / count * 100)
+        : count;
+
+      const row = document.createElement("div");
+      row.className = "bar-row";
+
+      const label = document.createElement("div");
+      label.className = "bar-label";
+
+      const name = document.createElement("span");
+      name.textContent = reason;
+
+      const number = document.createElement("span");
+      number.textContent = percentageMode
+        ? value + "%"
+        : value + (value === 1 ? " attempt" : " attempts");
+
+      label.append(name, number);
+
+      const track = document.createElement("div");
+      track.className = "bar-track";
+
+      const fill = document.createElement("div");
+      fill.className = "bar-fill";
+      if (reason === top) fill.classList.add("top");
+
+      fill.style.width =
+        Math.max(value > 0 ? 3 : 0, value / maxValue * 100) + "%";
+
+      track.appendChild(fill);
+      row.append(label, track);
+      section.appendChild(row);
+    });
+
+    body.appendChild(section);
   }
 
-  const top = rankedReasons[0];
-
-  // Analyze attempts associated with the most common obstacle
-  const topEntries = log.filter(function (entry) {
-    return entry.reason === top;
-  });
-
-  const topStarts = topEntries.filter(function (entry) {
-    return entry.started === true;
-  }).length;
-
-  const topRate = Math.round(
-    topStarts / topEntries.length * 100
+  addGraph(
+    "📊 Why You Get Stuck",
+    "Which obstacles you selected most often.",
+    counts,
+    false
   );
 
-  addRow(body, "Most common reason", top);
+  addGraph(
+    "🚀 Your Starting Rate",
+    "How often you started after selecting each obstacle.",
+    starts,
+    true
+  );
 
-  // Match the obstacle to its built-in recommendation
-  const reasonKey = Object.keys(reasons).find(function (key) {
-    return reasons[key].label === top;
-  });
-
-  // Build the personalized insight card
-  const card = document.createElement("div");
-  card.className = "insight-card";
-
-  const kicker = document.createElement("p");
-  kicker.className = "insight-kicker";
-  kicker.textContent = "Your procrastination insights";
-
-  const title = document.createElement("p");
-  title.className = "insight-title";
-  title.textContent = "Your biggest obstacle: " + top;
-
-  const summary = document.createElement("p");
-  summary.className = "insight-copy";
-  summary.textContent =
-    "You selected this obstacle " + topEntries.length +
-    (topEntries.length === 1 ? " time. " : " times. ") +
-    "You started on " + topStarts + " of those attempts (" +
-    topRate + "%).";
-
-  card.append(kicker, title, summary);
-
-  if (reasonKey) {
-    const strategy = document.createElement("p");
-    strategy.className = "insight-copy";
-    strategy.textContent =
-      "Strategy to try: " + reasons[reasonKey].technique + ".";
-
-    const nextStep = document.createElement("p");
-    nextStep.className = "insight-copy";
-    nextStep.textContent =
-      "Your next tiny step: " + reasons[reasonKey].step;
-
-    card.append(strategy, nextStep);
-  }
-
-  body.appendChild(card);
+  const note = document.createElement("p");
+  note.className = "insight";
+  note.textContent =
+    "Your most common obstacle is \"" + top +
+    "\". Try the recommended tiny step for that obstacle next time.";
+  body.appendChild(note);
 }
 
 
