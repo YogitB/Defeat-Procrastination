@@ -361,8 +361,24 @@ select option { background: #0b1220; color: #e8eefc; }
 .week { display: flex; gap: 8px; height: 110px; margin-top: 10px; }
 .wk { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; }
 .wk-bars { position: relative; flex: 1; width: 100%; }
-.wk-tries, .wk-starts { position: absolute; left: 0; right: 0; bottom: 0; border-radius: 6px; transition: height 0.5s ease; }
-.wk-tries { background: rgba(157, 176, 208, 0.3); }
+.wk-tries,
+.wk-starts {
+  position: absolute;
+  bottom: 0;
+  width: 42%;
+  border-radius: 6px;
+  transition: height 0.5s ease;
+}
+
+.wk-tries {
+  left: 5%;
+  background: rgba(157, 176, 208, 0.5);
+}
+
+.wk-starts {
+  left: 53%;
+  background: linear-gradient(180deg, #7ef0ff, var(--accent));
+}.wk-tries { background: rgba(157, 176, 208, 0.3); }
 .wk-starts { background: linear-gradient(180deg, #7ef0ff, var(--accent)); }
 .wk-label { font-family: var(--mono); font-size: 0.7rem; color: var(--muted); }
 .legend { display: flex; gap: 14px; margin-top: 10px; font-size: 0.78rem; color: var(--muted); }
