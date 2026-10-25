@@ -63,7 +63,7 @@
     input:focus {
       outline: none;
       border-color: var(--accent);
-      box-shadow: 0 0 0 4px rgba(207, 127, 87, 0.18);
+      box-shadow: 0 0 0 4px rgba(46, 230, 197, 0.18);
     }
 
     button {
@@ -421,7 +421,7 @@ select option { background: #0b1220; color: #e8eefc; }
   <div id="timerPicker" hidden>
   <label for="timerLength" class="hint">Timer length</label>
   <select id="timerLength">
-    <option value="0.1">6 seconds (test)</option>
+    
     <option value="5" selected>5 minutes</option>
     <option value="10">10 minutes</option>
     <option value="25">25 minutes</option>
@@ -1158,8 +1158,20 @@ function showQuizResult() {
   const keys = Object.keys(reasons).sort(function (a, b) {
     return (quizScores[b] || 0) - (quizScores[a] || 0);
   });
-  const main = keys[0];
-  const second = keys[1];
+
+  const highestScore = quizScores[keys[0]] || 0;
+  const tiedReasons = keys.filter(function (key) {
+    return (quizScores[key] || 0) === highestScore;
+  });
+
+  // Choose one tied result 
+  const main = tiedReasons[
+    Math.floor(Math.random() * tiedReasons.length)
+  ];
+
+  const second = keys.find(function (key) {
+    return key !== main;
+  });
 
   const box = document.getElementById("quizResult");
   box.innerHTML = "";
