@@ -706,8 +706,15 @@ async function sendToAI(userText) {
         messages: chatHistory.slice(-9)
       })
     });
+    if (!res.ok) {
+      throw new Error("AI request failed: " + res.status);
+    }
+
     const data = await res.json();
 
+    if (!data || typeof data.reply !== "string" || !data.reply.trim()) {
+      throw new Error("The AI returned an invalid response.");
+    }
     if (data.reply) {
       bubble.textContent = "";
       await typeText(bubble, data.reply);
@@ -720,6 +727,11 @@ async function sendToAI(userText) {
     bubble.textContent = "Couldn't reach the AI. Your built-in step above still works.";
     chatHistory.pop();
     console.log(err);
+  } finally{
+    chatInput.disabled=false;
+    chatSend.disabled=false;
+    chatInput.focus();
+    
   }
 
   chatInput.disabled = false;
