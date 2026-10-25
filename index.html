@@ -335,6 +335,21 @@ select option { background: #0b1220; color: #e8eefc; }
 .bar-track { height: 12px; margin-top: 5px; border-radius: 99px; background: rgba(255, 255, 255, 0.08); overflow: hidden; }
 .bar-fill { height: 100%; width: 0; border-radius: 99px; background: rgba(157, 176, 208, 0.55); transition: width 0.6s ease; }
 .bar-fill.top { background: linear-gradient(90deg, var(--accent), #7ef0ff); }
+#techmap { margin: 14px 0 4px; }
+#techmap svg { display: block; width: 100%; height: auto; overflow: visible; }
+.tm-axis { stroke: rgba(157, 176, 208, 0.4); stroke-width: 1; }
+.tm-guide { stroke: rgba(157, 176, 208, 0.18); stroke-width: 1; stroke-dasharray: 4 5; }
+.tm-quadrant { font-family: var(--mono); font-size: 8px; letter-spacing: 0.05em; text-transform: uppercase; fill: var(--muted); }
+.tm-tick { font-family: var(--mono); font-size: 8.5px; fill: var(--muted); }
+.tm-label { font-family: var(--mono); font-size: 8.5px; fill: var(--text); pointer-events: none; }
+.tm-dot { fill: rgba(157, 176, 208, 0.8); cursor: pointer; transition: fill 0.15s ease; }
+.tm-dot:hover, .tm-dot:focus-visible { fill: #7ef0ff; }
+.tm-dot.top { fill: var(--accent); }
+.tm-dot.active { stroke: #0b1220; stroke-width: 2.5; }
+.tm-detail { margin-top: 12px; padding: 12px 14px; border-radius: 12px; background: rgba(255, 255, 255, 0.06); border-left: 4px solid var(--accent); }
+.tm-detail strong { font-family: var(--display); font-size: 1rem; }
+.tm-detail p { margin: 6px 0 0; font-size: 0.9rem; }
+.tm-detail .hint { margin: 4px 0 0; }
 .tag { display: block; margin-top: 3px; font-family: var(--mono); font-size: 0.72rem; color: var(--muted); }
 .reco { margin-top: 18px; padding: 16px; border-radius: 14px; border-left: 4px solid var(--accent); background: rgba(46, 230, 197, 0.1); }
 .reco strong { font-family: var(--display); font-size: 1.1rem; }
@@ -492,11 +507,32 @@ select option { background: #0b1220; color: #e8eefc; }
         document.getElementById("output").textContent = "Type what you're avoiding first."
         return;
       }
-      document.getElementById("output").textContent = "You're avoiding: "+task;
-
-      const box = document.getElementById("reasonButtons");
-      box.innerHTML = "";
+      currentReason="";
+      currentStep="";
+      document.getElementById("fix").textContent="";
+      document.getElementById("technique").textContent="";
+      document.getElementById("step").textContent="";
+      document.getElementById("aiStep").hidden=true;
+      document.getElementById("startTimer").hidden = true;
+      document.getElementById("strategyBtn").hidden = true;
+      document.getElementById("timerPicker").hidden = true;
+      document.getElementById("planBox").hidden = true;
+      //Clear AI convo
+      chatHistory=[];
+      chatTask="";
+      chatLog.innerHTML="";
+      chat.hidden=true;
+      document.getElementById("strategyOut").innerHTML="";
+      document.getElementById("planCraftOut").innerHTML = "";
+      document.getElementById("planOut").textContent = "";
+      //Resetting quiz results
+      document.getElementById("quiz").hidden = true;
+      document.getElementById("quizResult").hidden = true;
+      //Rebuild the buttons
+      const box=  document.getElementById("reasonButtons");
+      box.innerHTML="";
       document.getElementById("quizStart").hidden=false;
+
 
       for (const key in reasons) {
         const btn = document.createElement("button");
@@ -811,7 +847,7 @@ function recordResult(started) {
   log.push({
     reason: currentReason,
     started: started,
-    data: localDate()
+    date: localDate()
   });
   saveLog(log);
   document.getElementById("startedPrompt").hidden = true; 
@@ -1231,6 +1267,105 @@ function recordMatchFeedback(id, helped) {
   saveMatch(feedback);
 }
 
+// Rough time to try a technique once, in minutes
+const MAP_TIME = { twomin: 2, teach: 5, breakdown: 6, reread: 8, sprint: 10, flash: 15, practice: 20 };
+const MAP_SHORT = { twomin: "2-min start", teach: "Teach aloud", breakdown: "Breakdown", reread: "Rereading", sprint: "Sprint", flash: "Flashcards", practice: "Practice Qs" };
+const MAP_DY = { practice: -10, flash: 12, breakdown: -12 };
+
+function buildTechMap(scores, topId) {
+  const NS = "http://www.w3.org/2000/svg";
+  const W = 340, H = 228, L = 40, R = 14, T = 20, B = 34;
+  const MAX_MIN = 22;
+  const plotW = W - L - R, plotH = H - T - B;
+
+  function px(minutes) { return L + (minutes / MAX_MIN) * plotW; }
+  function py(score) { return T + plotH - (score / 10) * plotH; }
+
+  function svgEl(name, attrs) {
+    const n = document.createElementNS(NS, name);
+    Object.keys(attrs).forEach(function (k) { n.setAttribute(k, attrs[k]); });
+    return n;
+  }
+  function svgText(x, y, text, cls, anchor) {
+    const t = svgEl("text", { x: x, y: y, class: cls, "text-anchor": anchor || "start" });
+    t.textContent = text;
+    return t;
+  }
+
+  const wrap = document.createElement("div");
+  wrap.id = "techmap";
+  const detail = document.createElement("div");
+  detail.className = "tm-detail";
+  const dotById = {};
+
+  const svg = svgEl("svg", {
+    viewBox: "0 0 " + W + " " + H,
+    role: "img",
+    "aria-label": "Study techniques placed by how long they take to try and how well they fit your answers"
+  });
+
+  svg.append(svgEl("line", { x1: L, y1: T, x2: L, y2: T + plotH, class: "tm-axis" }));
+  svg.append(svgEl("line", { x1: L, y1: T + plotH, x2: L + plotW, y2: T + plotH, class: "tm-axis" }));
+  svg.append(svgEl("line", { x1: L, y1: py(5), x2: L + plotW, y2: py(5), class: "tm-guide" }));
+  svg.append(svgEl("line", { x1: px(11), y1: T, x2: px(11), y2: T + plotH, class: "tm-guide" }));
+
+  svg.append(svgText(L + plotW / 2, H - 6, "Time it takes to try →", "tm-tick", "middle"));
+  const yLabel = svgText(0, 0, "Fit for you (0–10) →", "tm-tick", "middle");
+  yLabel.setAttribute("transform", "translate(12 " + (T + plotH / 2) + ") rotate(-90)");
+  svg.append(yLabel);
+
+  svg.append(svgText(L + 6, T + 12, "Quick wins", "tm-quadrant"));
+  svg.append(svgText(L + plotW - 4, T + 12, "Worth the setup", "tm-quadrant", "end"));
+
+
+  scores.forEach(function (s) {
+    const t = TECHS[s.id];
+    const cx = px(MAP_TIME[s.id]);
+    const cy = py(s.score);
+    const dot = svgEl("circle", {
+      cx: cx,
+      cy: cy,
+      r: s.id === topId ? 9 : 5.5 + (s.score / 10) * 2.5,
+      class: "tm-dot" + (s.id === topId ? " top" : ""),
+      tabindex: "0",
+      role: "button",
+      "aria-label": t.name + ": " + s.score + " out of 10 fit, about " + MAP_TIME[s.id] + " minutes to try"
+    });
+    dotById[s.id] = dot;
+    dot.addEventListener("click", function () { showDetail(s.id); });
+    dot.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); showDetail(s.id); }
+    });
+
+    const anchor = cx > L + plotW - 78 ? "end" : "start";
+    const label = svgText(
+      anchor === "end" ? cx - 12 : cx + 12,
+      cy + 3.5 + (MAP_DY[s.id] || 0),
+      MAP_SHORT[s.id],
+      "tm-label",
+      anchor
+    );
+    svg.append(dot, label);
+  });
+
+  function showDetail(id) {
+    const t = TECHS[id];
+    const s = scores.find(function (q) { return q.id === id; });
+    Object.keys(dotById).forEach(function (k) {
+      dotById[k].classList.toggle("active", k === id);
+    });
+    detail.textContent = "";
+    detail.append(makeEl("strong", t.name + ": " + s.score + "/10 fit"));
+    detail.append(makeEl("p", "About " + MAP_TIME[id] + " minutes to try. " + t.evidence + ".", "hint"));
+    detail.append(makeEl("p", "Why it fits: " + t.why));
+    detail.append(makeEl("p", "Try it now: " + t.tryIt));
+  }
+
+  wrap.append(svg, detail);
+  showDetail(topId);
+  return wrap;
+}
+
 function startMatch() {
   matchStep = 0;
   matchAnswers = {};
@@ -1272,6 +1407,8 @@ function showMatchResult() {
 
   box.append(makeEl("p", "How well each technique fits your situation", "result-title"));
   box.append(makeEl("p", "Fit scores out of 10, from simple rules I wrote. They are not measured effectiveness.", "hint"));
+  box.append(makeEl("p", "Each dot is a technique. Further left means quicker to try, higher means a better fit for your answers. Tap a dot.", "hint"));
+  box.append(buildTechMap(scores, topId));
 
   const chart = document.createElement("div");
   scores.forEach(function (s, i) {
