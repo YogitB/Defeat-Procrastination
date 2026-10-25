@@ -731,7 +731,7 @@ async function sendToAI(userText) {
     chatInput.disabled=false;
     chatSend.disabled=false;
     chatInput.focus();
-    
+
   }
 
   chatInput.disabled = false;
@@ -741,8 +741,29 @@ async function sendToAI(userText) {
 const PLAN_KEY = "defeat-procrastination-plan";
 
 function showPlan(plan) {
-  document.getElementById("planOut").textContent =
-    "Your plan: When " + plan.when + ", at " + plan.where + ", I will " + plan.step.charAt(0).toLowerCase() + plan.step.slice(1);
+  const out = document.getElementById("planOut");
+
+  // Making sure the plan has all fields
+  if (
+    !plan ||
+    typeof plan.when !== "string" ||
+    typeof plan.where !== "string" ||
+    typeof plan.step !== "string" ||
+    !plan.when.trim() ||
+    !plan.where.trim() ||
+    !plan.step.trim()
+  ) {
+    out.textContent =
+      "This saved plan is incomplete. Please create a new plan.";
+    return;
+  }
+
+  const step = plan.step.trim();
+
+  out.textContent =
+    "Your plan: When " + plan.when +
+    ", at " + plan.where +
+    ", I will " + step.charAt(0).toLowerCase() + step.slice(1);
 }
 
 document.getElementById("planSave").addEventListener("click", function () {
@@ -822,6 +843,9 @@ document.getElementById("planCraft").addEventListener("click", async function ()
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ mode: "plan", task: task, reason: currentReason, when: when, where: where })
     });
+    if (!res.ok) {
+      throw new Error("Request failed: " + res.status);
+    }
     const data = await res.json();
     if (data.reply) parts = parsePlan(data.reply);
   } catch (err) {
@@ -1567,6 +1591,9 @@ document.getElementById("strategyBtn").addEventListener("click", async function 
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ mode: "strategies", task: task, reason: currentReason })
     });
+    if (!res.ok) {
+      throw new Error("Request failed: " + res.status);
+    }
     const data = await res.json();
     if (data.reply) list = parseStrategies(data.reply);
   } catch (err) {
