@@ -562,6 +562,8 @@ let timerSeconds = 300;   // the chosen length, in seconds
 let timerId = null;
 let secondsLeft = timerSeconds;
 let timerRunning = false;
+let timerReason="";
+
 
 const startBtn = document.getElementById("startTimer");
 const resetBtn = document.getElementById("resetTimer");
@@ -588,6 +590,7 @@ function startTimer() {
   clearInterval(timerId);
   document.getElementById("startedPrompt").hidden = true;
   document.getElementById("kindNote").textContent = "";
+  timerReason=currentReason;
   timerRunning = true;
   picker.disabled = true;
   showTime(secondsLeft);
@@ -845,7 +848,7 @@ function currentStreak(log) {
 function recordResult(started) {
   const log = loadLog();
   log.push({
-    reason: currentReason,
+    reason: timerReason || currentReason,
     started: started,
     date: localDate()
   });
